@@ -86,12 +86,15 @@ Used Matplotlib and Seaborn to create:
 
 🎯 Marketing Recommendations
 
-Segment	                      Description	                                        Suggested Strategy
-Champions           	Frequent, recent, and high-spending customers	          Reward loyalty with exclusive offers
-Loyal Customers	      Regular buyers with steady spending	                    Upsell premium products
-At Risk	              Previously active but declining engagement	            Send personalized win-back campaigns
-Hibernating / Lost	  Inactive for long periods	                              Offer deep discounts or reactivation emails
-New Customers	        Just made their first purchase	                        Welcome campaign to encourage repeat buys
+## 💡 Step 7: Marketing Recommendations by Segment
+This recommendation contains the segment, description and suggested actions respectively.
+
+-**Champions** | High spenders, frequent, recent buyers | Reward loyalty, VIP offers |
+-**Loyal Customers** | Frequent and consistent | Upsell premium products |
+-**At Risk** | Long time since last purchase | Send win-back campaigns |
+-**Lost Customers** | Inactive for long periods | Offer strong reactivation discounts |
+-**New Customers** | Just started buying | Welcome and retention campaigns |
+
 
 🏁 Conclusion
 
