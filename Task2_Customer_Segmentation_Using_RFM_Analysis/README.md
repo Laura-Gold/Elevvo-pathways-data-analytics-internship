@@ -90,9 +90,13 @@ Used Matplotlib and Seaborn to create:
 This recommendation contains the segment, description and suggested actions respectively.
 
 -**Champions** | High spenders, frequent, recent buyers | Reward loyalty, VIP offers |
+
 -**Loyal Customers** | Frequent and consistent | Upsell premium products |
+
 -**At Risk** | Long time since last purchase | Send win-back campaigns |
+
 -**Lost Customers** | Inactive for long periods | Offer strong reactivation discounts |
+
 -**New Customers** | Just started buying | Welcome and retention campaigns |
 
 
