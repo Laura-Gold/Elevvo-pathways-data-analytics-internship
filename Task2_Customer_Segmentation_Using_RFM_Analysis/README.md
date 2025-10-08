@@ -99,6 +99,13 @@ This recommendation contains the segment, description and suggested actions resp
 
 -**New Customers** | Just started buying | Welcome and retention campaigns |
 
+🔍 Optional Extension: K-Means Clustering
+
+In addition to the traditional RFM scoring approach, K-Means clustering was applied to the standardized RFM variables (Recency, Frequency, and Monetary) to identify natural groupings among customers.
+
+The Elbow Method was used to determine the optimal number of clusters by analyzing the trade-off between the number of clusters (k) and inertia (within-cluster variance). Based on the plot, k=5 was selected, aligning with the five RFM-based segments derived earlier.
+
+This approach helps validate the RFM segmentation by confirming that similar behavioral patterns also emerge naturally from the data without predefined rules.
 
 🏁 Conclusion
 
