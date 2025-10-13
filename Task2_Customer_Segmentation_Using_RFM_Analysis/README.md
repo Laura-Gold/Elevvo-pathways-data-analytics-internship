@@ -1,92 +1,59 @@
-🧩 Customer Segmentation Using RFM Analysis
+**Customer Segmentation with RFM Analysis**
 
-This project applies RFM (Recency, Frequency, Monetary) analysis to segment customers based on their purchasing behavior using the Online Retail Dataset.
-The goal is to help businesses understand customer value, improve retention strategies, and design targeted marketing campaigns.
+This project uses the Online Retail Dataset to segment customers based on their purchasing behavior using Recency, Frequency, and Monetary (RFM) analysis. The goal is to help businesses identify high-value customers, re-engage inactive ones, and personalize marketing strategies.
 
-📊 Project Overview
+**What I Did**
 
-RFM analysis is a proven customer segmentation technique that evaluates how recently and how often customers purchase, and how much they spend.
+Using Python, I:
 
-In this project, I used Python to:
+Cleaned and prepared transaction data
 
--Analyze customer transactions.
+Calculated Recency, Frequency, and Monetary values per customer
 
--Compute Recency, Frequency, and Monetary scores.
+Scored and grouped customers into segments
 
--Assign customers into meaningful segments.
+Visualized patterns and insights
 
--Visualize the results to identify behavioral patterns.
+**Segmentation Method**
 
-🧠 Methodology
+**RFM Metrics**
 
-1. Data Preparation
+Recency → Days since last purchase
 
--Loaded and cleaned the Online Retail Dataset containing:
-InvoiceNo, StockCode, Description, Quantity, InvoiceDate, UnitPrice, CustomerID, Country.
+Frequency → Number of transactions
 
--Removed missing CustomerID values and cancelled transactions.
+Monetary → Total spend
 
--Created a TotalPrice column (Quantity × UnitPrice).
+**Scoring & Segments**
+Customers were assigned quantile-based scores (1–5) and grouped into key segments:
 
-2. RFM Metric Calculation
+Champions
 
-For each customer:
+Loyal Customers
 
--Recency: Days since last purchase
+At Risk
 
--Frequency: Number of transactions made
+Hibernating / Lost
 
--Monetary: Total amount spent
+New Customers
 
-3. Scoring and Segmentation
+**Visuals & Insights**
 
--Assigned scores (1–5) for each RFM metric using quantiles.
+Visuals include:
 
--Combined scores into an overall RFM score.
+Segment heatmaps
 
--Grouped customers into segments such as:
+Bar charts by value and engagement
 
-~Champions
+**Key findings:**
 
-~Loyal Customers
+A small segment (Champions) drives most revenue
 
-~At Risk
+Many customers are inactive and can be re-engaged
 
-~Hibernating
+Behavioral patterns support targeted marketing
 
-~Lost Customers
-
-4. Visualization
-
-Used Matplotlib and Seaborn to create:
-
--RFM heatmaps showing segment distribution.
-
--Bar charts comparing customer groups by value and engagement.
-
-🧰 Tools & Libraries
-
--Python 3
-
--Pandas – data manipulation
-
--NumPy – numerical computation
-
--Matplotlib / Seaborn – visualization
-
--Scikit-learn – clustering and scaling
-
-💡 Key Insights
-
--High-value customers (Champions) drive the majority of revenue.
-
--A significant portion of customers are inactive or hibernating, indicating potential re-engagement opportunities.
-
--Frequency and Recency patterns show clear potential for personalized marketing.
-
-🎯 Marketing Recommendations
-
-## 💡 Step 7: Marketing Recommendations by Segment
+# Marketing Recommendations by Segment
 This recommendation contains the segment, description and suggested actions respectively.
 
 -**Champions** | High spenders, frequent, recent buyers | Reward loyalty, VIP offers |
@@ -99,15 +66,18 @@ This recommendation contains the segment, description and suggested actions resp
 
 -**New Customers** | Just started buying | Welcome and retention campaigns |
 
-🔍 Optional Extension: K-Means Clustering
+**Bonus: K-Means Clustering**
 
-In addition to the traditional RFM scoring approach, K-Means clustering was applied to the standardized RFM variables (Recency, Frequency, and Monetary) to identify natural groupings among customers.
+K-Means was applied to standardized RFM data to validate segmentation. Using the elbow method, k=5 clusters aligned with the RFM segments.
 
-The Elbow Method was used to determine the optimal number of clusters by analyzing the trade-off between the number of clusters (k) and inertia (within-cluster variance). Based on the plot, k=5 was selected, aligning with the five RFM-based segments derived earlier.
+**Tools**
 
-This approach helps validate the RFM segmentation by confirming that similar behavioral patterns also emerge naturally from the data without predefined rules.
+Python (Pandas, NumPy)
 
-🏁 Conclusion
+Matplotlib / Seaborn
 
-This project demonstrates how data-driven customer segmentation can support smarter marketing strategies and customer relationship management.
-By applying RFM analysis, businesses can identify loyal customers, re-engage inactive ones, and focus marketing resources where they’ll have the highest impact.
+Scikit-learn
+
+**Conclusion**
+
+RFM analysis delivers actionable customer groups that support smarter retention, reactivation, and growth strategies.
