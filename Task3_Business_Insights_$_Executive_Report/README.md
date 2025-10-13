@@ -57,4 +57,4 @@ Executive-level reporting
 
 Only necessary outputs are included to keep the repository lightweight.
 
-The dashboard and processed data were generated from the datasets in this folder using the provided .py script.
+The dashboard and processed data were generated from the datasets in this folder using the provided .ipynb script.
