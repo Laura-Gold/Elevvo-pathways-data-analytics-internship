@@ -9,9 +9,7 @@ Includes original datasets from Olist (where upload size permits)
 
 Processed CSV files used directly for dashboard visualizations and insights
 
-2. Data Preparation Script
-
-olist_data.ipynb
+2. Data Preparation Script (olist_data.ipynb)
 
 Used to clean, merge, and structure raw data
 
@@ -21,7 +19,7 @@ The full merged dataset was too large to upload; only relevant processed outputs
 
 3. Dashboard Files
 
-Interactive dashboard built using the cleaned CSV outputs
+An interactive dashboard built using the cleaned CSV outputs
 
 Visualizes trends across:
 
