@@ -32,27 +32,13 @@ DATA_DIR = Path(".")
 
 # Helper Functions
 
-def fmt_k(n):
-    """Format numbers in K/M notation."""
-    try:
-        n = float(n)
-    except Exception:
-        return "N/A"
-    if n != n:
-        return "N/A"
-    if abs(n) >= 1_000_000:
-        return f"{n/1_000_000:.1f}M"
-    if abs(n) >= 1_000:
-        return f"{n/1_000:.1f}K"
-    return f"{n:,.0f}"
-
-def set_transparent(fig):
-    """Make Plotly figures background transparent."""
-    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-    return fig
+ef read_csv_if_exists(fn: str) -> Optional[pd.DataFrame]:
+    p = DATA_DIR / fn
+    if not p.exists():
+        return None
+    return pd.read_csv(p, low_memory=False)
 
 def pick_col(df: pd.DataFrame, candidates: list) -> Optional[str]:
-    """Select column from candidates if it exists in DataFrame."""
     if df is None: return None
     cols = list(df.columns)
     lower = {c.lower(): c for c in cols}
@@ -67,97 +53,103 @@ def pick_col(df: pd.DataFrame, candidates: list) -> Optional[str]:
                 return c
     return None
 
+def fmt_k(n):
+    try:
+        n = float(n)
+    except Exception:
+        return "N/A"
+    if n != n:
+        return "N/A"
+    if abs(n) >= 1_000_000:
+        return f"{n/1_000_000:.1f}M"
+    if abs(n) >= 1_000:
+        return f"{n/1_000:.1f}K"
+    return f"{n:,.0f}"
 
-# Load Master Dataset from Google Drive
+def set_transparent(fig):
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    return fig
 
-MASTER_URL = "http://drive.usercontent.google.com/u/0/uc?id=1abSL-wjEdmTjH6dKqQOzqgzQZKloWktT&export=download"
+# -----------------------
+# Load all datasets
+# -----------------------
+master = read_csv_if_exists("Olist_Cleaned_Full_Dataset.csv")
+sales_month = read_csv_if_exists("Olist_Sales_By_Month.csv")
+sales_state = read_csv_if_exists("Olist_Sales_By_State.csv")
+sales_category = read_csv_if_exists("Olist_Sales_By_Category.csv")
+customers_state = read_csv_if_exists("Olist_Customers_By_State.csv")
+payment_methods = read_csv_if_exists("Olist_Payment_Methods.csv")
+order_status = read_csv_if_exists("Olist_Order_Status.csv")
+delivery_perf = read_csv_if_exists("Olist_Delivery_Performance.csv")
+rfm_file = read_csv_if_exists("Olist_RFM_Segments.csv")
 
-@st.cache_data
-def load_master(url):
-    output = BytesIO()
-    gdown.download(url, output, quiet=True, fuzzy=True)
-    output.seek(0)
-    df = pd.read_csv(output, low_memory=False)
-    # Clean columns
-    df.columns = df.columns.str.strip()
-    # Parse dates
-    if "order_purchase_timestamp" in df.columns:
-        df["order_purchase_timestamp"] = pd.to_datetime(df["order_purchase_timestamp"], errors="coerce")
-        df["year"] = df["order_purchase_timestamp"].dt.year
-        df["month"] = df["order_purchase_timestamp"].dt.month
-        df["month_name"] = df["order_purchase_timestamp"].dt.strftime("%b")
-    return df
+if master is None and sales_month is None:
+    st.error("Please place 'Olist_Cleaned_Full_Dataset.csv' or at least 'Olist_Sales_By_Month.csv' in this folder.")
+    st.stop()
 
-try:
-    master = load_master(MASTER_URL)
-    st.success("Master dataset loaded from Google Drive!")
-except Exception as e:
-    st.error(f"Failed to load master dataset: {e}")
-    master = pd.DataFrame()
+# -----------------------
+# Column detection
+# -----------------------
+PAY_COL = pick_col(master, ["payment_value", "payment_amount", "price", "payment"])
+STATE_COL = pick_col(master, ["customer_state", "state", "customer_state_code"])
+CITY_COL = pick_col(master, ["customer_city", "city"])
+ORDER_DATE_COL = pick_col(master, ["order_purchase_timestamp", "order_date", "purchase_date"])
+CUSTOMER_COL = pick_col(master, ["customer_unique_id", "customer_id"])
+ORDER_COL = pick_col(master, ["order_id"])
+PROD_CAT_COL = pick_col(master, ["product_category_name_english", "product_category_name", "category"])
+DELIVERY_TIME_COL = pick_col(master, ["delivery_time", "delivery_time_days", "delivery_time_day"])
 
+# Dates & derived fields
+if master is not None and ORDER_DATE_COL and ORDER_DATE_COL in master.columns:
+    master[ORDER_DATE_COL] = pd.to_datetime(master[ORDER_DATE_COL], errors="coerce")
+    master["year"] = master[ORDER_DATE_COL].dt.year
+    master["month_num"] = master[ORDER_DATE_COL].dt.month
+    master["month_name"] = master[ORDER_DATE_COL].dt.strftime("%b")
+    master["month_label"] = master[ORDER_DATE_COL].dt.strftime("%b %Y")
 
-# Load Other CSVs if available
+if master is not None and DELIVERY_TIME_COL is None:
+    if "order_delivered_customer_date" in master.columns and ORDER_DATE_COL in master.columns:
+        master["order_delivered_customer_date"] = pd.to_datetime(master["order_delivered_customer_date"], errors="coerce")
+        master["delivery_time_days"] = (master["order_delivered_customer_date"] - master[ORDER_DATE_COL]).dt.days
+        DELIVERY_TIME_COL = "delivery_time_days"
 
-sales_month = pd.read_csv(DATA_DIR / "Olist_Sales_By_Month.csv") if (DATA_DIR / "Olist_Sales_By_Month.csv").exists() else None
-sales_state = pd.read_csv(DATA_DIR / "Olist_Sales_By_State.csv") if (DATA_DIR / "Olist_Sales_By_State.csv").exists() else None
-sales_category = pd.read_csv(DATA_DIR / "Olist_Sales_By_Category.csv") if (DATA_DIR / "Olist_Sales_By_Category.csv").exists() else None
-customers_state = pd.read_csv(DATA_DIR / "Olist_Customers_By_State.csv") if (DATA_DIR / "Olist_Customers_By_State.csv").exists() else None
-payment_methods = pd.read_csv(DATA_DIR / "Olist_Payment_Methods.csv") if (DATA_DIR / "Olist_Payment_Methods.csv").exists() else None
-order_status = pd.read_csv(DATA_DIR / "Olist_Order_Status.csv") if (DATA_DIR / "Olist_Order_Status.csv").exists() else None
-delivery_perf = pd.read_csv(DATA_DIR / "Olist_Delivery_Performance.csv") if (DATA_DIR / "Olist_Delivery_Performance.csv").exists() else None
-rfm_file = pd.read_csv(DATA_DIR / "Olist_RFM_Segments.csv") if (DATA_DIR / "Olist_RFM_Segments.csv").exists() else None
-
-
-# Sidebar Filters
-
+# -----------------------
+# Sidebar filters
+# -----------------------
 with st.sidebar:
     st.markdown("<div style='text-align:center;font-size:18px'>🛒 <strong>Olist</strong></div>", unsafe_allow_html=True)
     st.markdown("---")
 
-    # Year filter
-    if "year" in master.columns:
-        years = ["All"] + sorted(master["year"].dropna().unique().astype(int).tolist())
-        selected_year = st.selectbox("Year", years, index=0)
-    else:
-        selected_year = "All"
+    years = ["All"] + sorted(master["year"].dropna().unique().astype(int).tolist()) if master is not None else ["All"]
+    selected_year = st.selectbox("Year", years, index=0)
 
-    # Month filter
-    if "month" in master.columns:
-        months = ["All"] + sorted(master["month"].dropna().unique().tolist())
-        selected_month = st.selectbox("Month", months, index=0)
-    else:
-        selected_month = "All"
+    states = ["All"] + sorted(customers_state["customer_state"].dropna().unique().tolist()) if customers_state is not None else ["All"]
+    selected_state = st.selectbox("State", states, index=0)
 
-    # State filter
-    if "customer_state" in master.columns:
-        states = ["All"] + sorted(master["customer_state"].dropna().unique().tolist())
-        selected_state = st.selectbox("State", states, index=0)
-    else:
-        selected_state = "All"
+    prodcats = ["All"]
+    if sales_category is not None:
+        pcol = pick_col(sales_category, ["product_category_name_english", "Category", "product_category_name"])
+        if pcol:
+            prodcats += sorted(list(sales_category[pcol].dropna().unique()))
+    selected_product = st.selectbox("Product Category", prodcats, index=0)
 
-    # Product Category filter
-    PROD_CAT_COL = "product_category_name_english"
-    if PROD_CAT_COL in master.columns:
-        prodcats = ["All"] + sorted(master[PROD_CAT_COL].dropna().unique().tolist())
-        selected_product = st.selectbox("Product Category", prodcats, index=0)
-    else:
-        selected_product = "All"
+# -----------------------
+# Filter helper
+# -----------------------
+def apply_filters(df: pd.DataFrame) -> Optional[pd.DataFrame]:
+    if df is None:
+        return None
+    tmp = df.copy()
+    if selected_year != "All" and "year" in tmp.columns:
+        tmp = tmp[tmp["year"] == int(selected_year)]
+    if selected_state != "All" and STATE_COL and STATE_COL in tmp.columns:
+        tmp = tmp[tmp[STATE_COL] == selected_state]
+    if selected_product != "All" and PROD_CAT_COL and PROD_CAT_COL in tmp.columns:
+        tmp = tmp[tmp[PROD_CAT_COL] == selected_product]
+    return tmp
 
-    st.markdown("---")
-    st.markdown("<div style='color:#9aaab5;font-size:12px'>Tip: Monthly axis shows Jan–Dec. Use Year to filter months.</div>", unsafe_allow_html=True)
-
-
-# Apply Filters
-
-filtered = master.copy()
-if selected_year != "All" and "year" in filtered.columns:
-    filtered = filtered[filtered["year"] == int(selected_year)]
-if selected_month != "All" and "month" in filtered.columns:
-    filtered = filtered[filtered["month"] == selected_month]
-if selected_state != "All" and "customer_state" in filtered.columns:
-    filtered = filtered[filtered["customer_state"] == selected_state]
-if selected_product != "All" and PROD_CAT_COL in filtered.columns:
-    filtered = filtered[filtered[PROD_CAT_COL] == selected_product]
+filtered = apply_filters(master) if master is not None else None
+source_df = filtered if filtered is not None else master
 
 # ---------------------------
 # Tabs: Dashboard Pages & Executive Report
@@ -364,3 +356,4 @@ with tab3:
 
     st.markdown("---")
     st.markdown("💡 **Tip:** Use the camera icon in your browser or Streamlit's screenshot tool to capture this page as a PNG for reports or LinkedIn posts.")
+
