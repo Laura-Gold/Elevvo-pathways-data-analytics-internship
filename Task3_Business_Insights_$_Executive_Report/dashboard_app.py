@@ -1,22 +1,18 @@
 # dashboard_app.py
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from pathlib import Path
 import textwrap
+from typing import Optional
+from io import BytesIO
 import gdown
-from streamlit.components.v1 import html
 
 
-# Configurations
+# Configuration & Theme
 
-st.set_page_config(
-    page_title="Brazilian E-commerce Performance Dashboard",
-    layout="wide",
-    page_icon="🛒"
-)
+st.set_page_config(page_title="Brazilian E-commerce Dashboard", layout="wide", page_icon="🛒")
 
-# Minimal CSS
 st.markdown("""
 <style>
 .stApp { background-color: #0b0c10; color: #e6eef6; }
@@ -30,27 +26,42 @@ st.markdown("""
 PRIMARY = "#4f46e5"
 BAR_COLOR = PRIMARY
 PIE_PALETTE = px.colors.qualitative.Dark24
+DATA_DIR = Path(".")
+
+CITY_COORDS = {
+    "sao paulo": (-23.55052, -46.633308),
+    "rio de janeiro": (-22.906847, -43.172896),
+    "belo horizonte": (-19.920682, -43.937088),
+    "salvador": (-12.974722, -38.476389),
+    "curitiba": (-25.427778, -49.273056),
+    "recife": (-8.047562, -34.876964),
+    "porto alegre": (-30.034647, -51.217658),
+    "brasilia": (-15.793889, -47.882778),
+    "fortaleza": (-3.71722, -38.54306),
+    "manaus": (-3.10194, -60.025),
+    "belem": (-1.455833, -48.504444),
+    "goiania": (-16.686891, -49.264788),
+    "campinas": (-22.90556, -47.06083),
+    "niteroi": (-22.8833, -43.1033),
+    "joao pessoa": (-7.119495, -34.845011),
+    "maceio": (-9.66599, -35.735),
+    "florianopolis": (-27.5954, -48.5480),
+    "cuiaba": (-15.5989, -56.0949),
+    "vitoria": (-20.3155, -40.3128),
+}
+
+STATE_CENTROIDS = {
+    "AC": (-8.77, -70.55), "AL": (-9.62, -36.40), "AM": (-3.07, -61.66), "AP": (1.41, -51.77),
+    "BA": (-12.96, -38.51), "CE": (-5.20, -39.53), "DF": (-15.83, -47.86), "ES": (-19.19, -40.34),
+    "GO": (-15.42, -49.27), "MA": (-5.54, -45.27), "MG": (-18.10, -44.38), "MS": (-20.51, -54.54),
+    "MT": (-12.64, -55.42), "PA": (-5.53, -52.29), "PB": (-7.06, -35.55), "PE": (-8.28, -36.57),
+    "PI": (-7.71, -42.73), "PR": (-24.89, -51.55), "RJ": (-22.81, -42.99), "RN": (-5.22, -36.52),
+    "RO": (-11.22, -62.80), "RR": (1.89, -61.22), "RS": (-30.03, -51.23), "SC": (-27.33, -49.44),
+    "SE": (-10.57, -37.45), "SP": (-23.55, -46.63), "TO": (-10.25, -48.25)
+}
 
 
-# Load dataset from Google Drive
-
-url = "http://drive.usercontent.google.com/u/0/uc?id=1abSL-wjEdmTjH6dKqQOzqgzQZKloWktT&export=download"
-output = "Olist_Cleaned_Full_Dataset.csv"            # The file was too large to upload on GitHub
-gdown.download(url, output, quiet=False)
-
-master = pd.read_csv(output, low_memory=False)
-
-# Ensure datetime columns
-ORDER_DATE_COL = "order_purchase_timestamp"
-if ORDER_DATE_COL in master.columns:
-    master[ORDER_DATE_COL] = pd.to_datetime(master[ORDER_DATE_COL], errors="coerce")
-    master["year"] = master[ORDER_DATE_COL].dt.year
-    master["month_num"] = master[ORDER_DATE_COL].dt.month
-    master["month_name"] = master[ORDER_DATE_COL].dt.strftime("%b")
-    master["month_label"] = master[ORDER_DATE_COL].dt.strftime("%b %Y")
-
-
-# KPIs
+# Helper Functions
 
 def fmt_k(n):
     try:
@@ -65,27 +76,56 @@ def fmt_k(n):
         return f"{n/1_000:.1f}K"
     return f"{n:,.0f}"
 
-# Sidebar filters
+def set_transparent(fig):
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    return fig
 
-with st.sidebar:
-    st.markdown("<div style='text-align:center;font-size:18px'>🛒 <strong>Olist Dashboard</strong></div>", unsafe_allow_html=True)
-    st.markdown("---")
-    years = ["All"] + sorted(master["year"].dropna().unique().astype(int).tolist())
-    selected_year = st.selectbox("Year", years, index=0)
-    
-    states = ["All"] + sorted(master["customer_state"].dropna().unique().tolist())
-    selected_state = st.selectbox("State", states, index=0)
+def pick_col(df: pd.DataFrame, candidates: list) -> Optional[str]:
+    if df is None: return None
+    cols = list(df.columns)
+    lower = {c.lower(): c for c in cols}
+    for cand in candidates:
+        if cand is None: continue
+        if cand.lower() in lower:
+            return lower[cand.lower()]
+    for cand in candidates:
+        if cand is None: continue
+        for c in cols:
+            if cand.lower() in c.lower():
+                return c
+    return None
 
-def apply_filters(df):
-    tmp = df.copy()
-    if selected_year != "All":
-        tmp = tmp[tmp["year"] == int(selected_year)]
-    if selected_state != "All":
-        tmp = tmp[tmp["customer_state"] == selected_state]
-    return tmp
 
-filtered = apply_filters(master)
+# Load Master Dataset from Google Drive
 
+MASTER_URL = "http://drive.usercontent.google.com/u/0/uc?id=1abSL-wjEdmTjH6dKqQOzqgzQZKloWktT&export=download"
+
+@st.cache_data
+def load_master(url):
+    output = BytesIO()
+    gdown.download(url, output, quiet=True, fuzzy=True)
+    output.seek(0)
+    df = pd.read_csv(output, low_memory=False)
+    return df
+
+try:
+    master = load_master(MASTER_URL)
+    st.success("Master dataset loaded from Google Drive!")
+except Exception as e:
+    st.error(f"Failed to load master dataset: {e}")
+    master = None
+
+
+# Load other CSVs 
+
+sales_month = pd.read_csv(DATA_DIR / "Olist_Sales_By_Month.csv") if (DATA_DIR / "Olist_Sales_By_Month.csv").exists() else None
+sales_state = pd.read_csv(DATA_DIR / "Olist_Sales_By_State.csv") if (DATA_DIR / "Olist_Sales_By_State.csv").exists() else None
+sales_category = pd.read_csv(DATA_DIR / "Olist_Sales_By_Category.csv") if (DATA_DIR / "Olist_Sales_By_Category.csv").exists() else None
+customers_state = pd.read_csv(DATA_DIR / "Olist_Customers_By_State.csv") if (DATA_DIR / "Olist_Customers_By_State.csv").exists() else None
+payment_methods = pd.read_csv(DATA_DIR / "Olist_Payment_Methods.csv") if (DATA_DIR / "Olist_Payment_Methods.csv").exists() else None
+order_status = pd.read_csv(DATA_DIR / "Olist_Order_Status.csv") if (DATA_DIR / "Olist_Order_Status.csv").exists() else None
+delivery_perf = pd.read_csv(DATA_DIR / "Olist_Delivery_Performance.csv") if (DATA_DIR / "Olist_Delivery_Performance.csv").exists() else None
+rfm_file = pd.read_csv(DATA_DIR / "Olist_RFM_Segments.csv") if (DATA_DIR / "Olist_RFM_Segments.csv").exists() else None
 
 # Tabs
 
@@ -258,3 +298,4 @@ with tab3:
 
     # Optional PNG export placeholder (can use st.write to generate image of the text or capture screenshot manually)
     st.markdown("Click the camera icon in your browser or use Streamlit's screenshot tool to capture this page as a PNG for reports or LinkedIn posts.")
+
