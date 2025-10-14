@@ -23,6 +23,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+PRIMARY = "#4f46e5"
+BAR_COLOR = PRIMARY
+PIE_PALETTE = px.colors.qualitative.Dark24
+DATA_DIR = Path(".")
+
 with st.sidebar:
     st.markdown("<div style='text-align:center;font-size:18px'>🛒 <strong>Olist</strong></div>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:center;color:#9aaab5;margin-bottom:6px'>⬇️</div>", unsafe_allow_html=True)
@@ -59,6 +64,22 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("<div style='color:#9aaab5;font-size:12px'>Tip: Monthly axis shows Jan–Dec. Use Year to filter months.</div>", unsafe_allow_html=True)
 
+
+# Load master dataset from Google Drive
+
+import gdown
+url = "http://drive.usercontent.google.com/u/0/uc?id=1abSL-wjEdmTjH6dKqQOzqgzQZKloWktT&export=download"
+output = "Olist_Cleaned_Full_Dataset.csv"
+gdown.download(url, output, quiet=False)
+master = pd.read_csv(output, low_memory=False)
+
+# parse dates and derive year/month columns
+master["order_purchase_timestamp"] = pd.to_datetime(master["order_purchase_timestamp"], errors="coerce")
+master["year"] = master["order_purchase_timestamp"].dt.year
+master["month"] = master["order_purchase_timestamp"].dt.month
+master["month_name"] = master["order_purchase_timestamp"].dt.strftime("%b")
+
+
 filtered = master.copy()
 
 if selected_year != "All" and "year" in filtered.columns:
@@ -72,13 +93,6 @@ if selected_state != "All" and "customer_state" in filtered.columns:
 
 if selected_product != "All" and PROD_CAT_COL in filtered.columns:
     filtered = filtered[filtered[PROD_CAT_COL] == selected_product]
-
-
-PRIMARY = "#4f46e5"
-BAR_COLOR = PRIMARY
-PIE_PALETTE = px.colors.qualitative.Dark24
-DATA_DIR = Path(".")
-
 
 
 CITY_COORDS = {
@@ -351,5 +365,6 @@ with tab3:
 
     # Optional PNG export placeholder (can use st.write to generate image of the text or capture screenshot manually)
     st.markdown("Click the camera icon in your browser or use Streamlit's screenshot tool to capture this page as a PNG for reports or LinkedIn posts.")
+
 
 
