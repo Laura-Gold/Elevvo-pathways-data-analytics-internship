@@ -1,4 +1,5 @@
 # dashboard_app.py
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -30,11 +31,25 @@ DATA_DIR = Path(".")
 
 # Load master dataset from Google Drive
 
-import gdown
 url = "http://drive.usercontent.google.com/u/0/uc?id=1abSL-wjEdmTjH6dKqQOzqgzQZKloWktT&export=download"
 output = "Olist_Cleaned_Full_Dataset.csv"
 gdown.download(url, output, quiet=False)
 master = pd.read_csv(output, low_memory=False)
+
+# Download from Google Drive
+url = "http://drive.usercontent.google.com/u/0/uc?id=1abSL-wjEdmTjH6dKqQOzqgzQZKloWktT&export=download"
+output = "Olist_Cleaned_Full_Dataset.csv"
+gdown.download(url, output, quiet=False)
+
+# Load CSV and clean column names
+master = pd.read_csv(output, low_memory=False)
+master.columns = master.columns.str.strip()  # remove leading/trailing spaces
+
+# Convert order date to datetime
+master["order_purchase_timestamp"] = pd.to_datetime(master["order_purchase_timestamp"], errors="coerce")
+master["year"] = master["order_purchase_timestamp"].dt.year
+master["month"] = master["order_purchase_timestamp"].dt.month
+master["month_name"] = master["order_purchase_timestamp"].dt.strftime("%b")
 
 # parse dates and derive year/month columns
 master["order_purchase_timestamp"] = pd.to_datetime(master["order_purchase_timestamp"], errors="coerce")
@@ -363,6 +378,7 @@ with tab3:
 
     # Optional PNG export placeholder (can use st.write to generate image of the text or capture screenshot manually)
     st.markdown("Click the camera icon in your browser or use Streamlit's screenshot tool to capture this page as a PNG for reports or LinkedIn posts.")
+
 
 
 
