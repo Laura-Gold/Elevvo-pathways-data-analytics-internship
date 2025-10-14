@@ -23,10 +23,63 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+with st.sidebar:
+    st.markdown("<div style='text-align:center;font-size:18px'>🛒 <strong>Olist</strong></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center;color:#9aaab5;margin-bottom:6px'>⬇️</div>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    # Year filter
+    if "year" in master.columns:
+        years = ["All"] + sorted(master["year"].dropna().unique().astype(int).tolist())
+        selected_year = st.selectbox("Year", years, index=0)
+    else:
+        selected_year = "All"
+    
+    # Month filter
+    if "month" in master.columns:
+        months = ["All"] + sorted(master["month"].dropna().unique().tolist())
+        selected_month = st.selectbox("Month", months, index=0)
+    else:
+        selected_month = "All"
+    
+    # State filter
+    if "customer_state" in master.columns:
+        states = ["All"] + sorted(master["customer_state"].dropna().unique().tolist())
+        selected_state = st.selectbox("State", states, index=0)
+    else:
+        selected_state = "All"
+    
+    # Product Category filter
+    if PROD_CAT_COL and PROD_CAT_COL in master.columns:
+        prodcats = ["All"] + sorted(master[PROD_CAT_COL].dropna().unique().tolist())
+        selected_product = st.selectbox("Product Category", prodcats, index=0)
+    else:
+        selected_product = "All"
+    
+    st.markdown("---")
+    st.markdown("<div style='color:#9aaab5;font-size:12px'>Tip: Monthly axis shows Jan–Dec. Use Year to filter months.</div>", unsafe_allow_html=True)
+
+filtered = master.copy()
+
+if selected_year != "All" and "year" in filtered.columns:
+    filtered = filtered[filtered["year"] == int(selected_year)]
+
+if selected_month != "All" and "month" in filtered.columns:
+    filtered = filtered[filtered["month"] == selected_month]
+
+if selected_state != "All" and "customer_state" in filtered.columns:
+    filtered = filtered[filtered["customer_state"] == selected_state]
+
+if selected_product != "All" and PROD_CAT_COL in filtered.columns:
+    filtered = filtered[filtered[PROD_CAT_COL] == selected_product]
+
+
 PRIMARY = "#4f46e5"
 BAR_COLOR = PRIMARY
 PIE_PALETTE = px.colors.qualitative.Dark24
 DATA_DIR = Path(".")
+
+
 
 CITY_COORDS = {
     "sao paulo": (-23.55052, -46.633308),
@@ -298,4 +351,5 @@ with tab3:
 
     # Optional PNG export placeholder (can use st.write to generate image of the text or capture screenshot manually)
     st.markdown("Click the camera icon in your browser or use Streamlit's screenshot tool to capture this page as a PNG for reports or LinkedIn posts.")
+
 
