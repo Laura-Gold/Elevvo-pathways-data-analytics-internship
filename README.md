@@ -1,4 +1,4 @@
-# Elevo Pathways Data Analytics Internship
+# Elevvo Pathways Data Analytics Internship
 
 Welcome to my Data Analytics Internship Portfolio!  
 This repository contains all my projects completed during the Elevo Pathways Data Analytics Internship program.
