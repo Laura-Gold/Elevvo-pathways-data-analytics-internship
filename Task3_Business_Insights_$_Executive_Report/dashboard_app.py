@@ -3,11 +3,10 @@ import pandas as pd
 import plotly.express as px
 from pathlib import Path
 import textwrap
-from typing import 
-import gdown
+from typing import Optional
 
 
-# Configuration and Theme
+# Theme
 
 st.set_page_config(page_title="Brazilian E-commerce Performance Dashboard",
                    layout="wide", page_icon="🛒")
@@ -66,19 +65,7 @@ STATE_CENTROIDS = {
 }
 
 
-# Helpers Functions
-
-
-# Function to load data from a URL with caching
-@st.cache_data
-def load_data_from_url(url: str) -> Optional[pd.DataFrame]:
-    """Downloads data from a URL and caches it."""
-    try:
-        df = pd.read_csv(url, low_memory=False)
-        return df
-    except Exception as e:
-        st.error(f"An error occurred while loading the data: {e}")
-        return None
+# Helpers Function
 
 def read_csv_if_exists(fn: str) -> Optional[pd.DataFrame]:
     p = DATA_DIR / fn
@@ -122,15 +109,7 @@ def set_transparent(fig):
 
 # Load datasets
 
-
-# Google Drive URL for the master file
-# This is a direct download link 
-MASTER_FILE_URL = "https://drive.google.com/uc?export=download&id=1abSL-wjEdmTjH6dKqQOzqgzQZKloWktT"
-
-# Load the master dataset from the URL 
-master = load_data_from_url(MASTER_FILE_URL)
-
-# load the smaller, pre-aggregated files from the local directory (GitHub repo)
+master = read_csv_if_exists("Olist_Cleaned_Full_Dataset.csv")     # Unable to upload on GitHub due to the size but can be accessed through the link in the requirements file.
 sales_month = read_csv_if_exists("Olist_Sales_By_Month.csv")
 sales_state = read_csv_if_exists("Olist_Sales_By_State.csv")
 sales_category = read_csv_if_exists("Olist_Sales_By_Category.csv")
@@ -140,8 +119,8 @@ order_status = read_csv_if_exists("Olist_Order_Status.csv")
 delivery_perf = read_csv_if_exists("Olist_Delivery_Performance.csv")
 rfm_file = read_csv_if_exists("Olist_RFM_Segments.csv")
 
-if master is None:
-    st.error("Failed to load the main dataset from Google Drive. Please check the link and your connection.")
+if master is None and sales_month is None:
+    st.error("Place 'Olist_Cleaned_Full_Dataset.csv' (preferred) or 'Olist_Sales_By_Month.csv' in this folder.")
     st.stop()
 
 # Robust column detection in master
@@ -154,7 +133,7 @@ ORDER_COL = pick_col(master, ["order_id"])
 PROD_CAT_COL = pick_col(master, ["product_category_name_english", "product_category_name", "product_category", "category"])
 DELIVERY_TIME_COL = pick_col(master, ["delivery_time", "delivery_time_days", "delivery_time_day"])
 
-# normalize master dates & derived fields 
+# normalize master dates & derived fields if available
 if master is not None and ORDER_DATE_COL and ORDER_DATE_COL in master.columns:
     master[ORDER_DATE_COL] = pd.to_datetime(master[ORDER_DATE_COL], errors="coerce")
     master["year"] = master[ORDER_DATE_COL].dt.year
@@ -203,8 +182,7 @@ with st.sidebar:
 
 
 # Apply filters helper
-
-def apply_filters(df: pd.DataFrame) -> Optional[pd.DataFrame]:
+) -> Optional[pd.DataFrame]:
     if df is None:
         return None
     tmp = df.copy()
@@ -487,7 +465,7 @@ with tab2:
                 st.info("Delivery performance data not available.")
 
     st.markdown("---")
-    st.subheader("Order Status Breakdown")
+    st.subheader("Order Status Breakdown (All)")
     # prefer external order_status file else master
     if order_status is not None and len(order_status.columns) >= 2:
         cat = order_status.columns[0]; val = order_status.columns[1]
@@ -541,6 +519,7 @@ with tab3:
 - **Unique Customers:** 96.1K
 - **Avg Order Value (AOV):** $204
 - **Delivery Success Rate:** 97.1%
+
                                 
                                 """))
 
@@ -561,3 +540,12 @@ with tab3:
     - Operationalize the dashboard for weekly KPI monitoring and test improvements.
                                 
     """))
+
+    
+
+    st.markdown("---")
+    
+
+
+   
+       
